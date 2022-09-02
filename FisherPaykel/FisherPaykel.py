@@ -47,6 +47,8 @@ class FisherPaykelSpider(SitemapSpider):
         for pdf_sel in response.css('a[href*=".pdf"]'):
             manual = dict()
             rfile = pdf_sel.css("::attr(href)").get()
+            if 'https:' not in rfile:
+                rfile = response.urljoin(rfile)
             if rfile in self.rfiles:
                 continue
             self.rfiles.add(rfile)
