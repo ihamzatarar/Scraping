@@ -13,11 +13,17 @@ class FisherPaykelSpider(SitemapSpider):
                     'https://www.fisherpaykel.com/uk/sitemap_index.xml',
                     'https://www.fisherpaykel.com/sg/sitemap_index.xml',
                     'https://www.fisherpaykel.com/nz/sitemap_index.xml']
+
+    sitemap_rules = [('/cooling/', 'parse'), ('/cooking/', 'parse'),
+                     ('/laundry/', 'parse'), ('/accessories/', 'parse'),
+                     ('/dishwashing/', 'parse'), ('/ventilation/', 'parse'),
+                     ('/outdoor/', 'parse'), ('/cooker-hoods/', 'parse')]
     rfiles = set()
     rtypes = set()
 
     def parse(self, response, **kwargs):
-        manual = dict()
+
+        # Check for manual
         manuals = ['User and Installation Guide', 'user', 'Spec Guide', '\nQuick Reference guide' 'Guide D’Installation', 'User Install Guide',
                    'DataSheet Chest Freezer with 30inch Trim', 'Guide D’Utilisation', 'Wash Program Data Sheet', 'Planning Guide - PDF',
                    'Quick Start Guide FR', 'Specification Guide', 'Cavity Sizes Guide', 'User Guide FR', 'Pairing Guide', 'Specification Guide - PDF',
@@ -39,6 +45,7 @@ class FisherPaykelSpider(SitemapSpider):
             return
 
         for pdf_sel in response.css('a[href*=".pdf"]'):
+            manual = dict()
             rfile = pdf_sel.css("::attr(href)").get()
             if rfile in self.rfiles:
                 continue
@@ -49,6 +56,9 @@ class FisherPaykelSpider(SitemapSpider):
                 rtype = pdf_sel.xpath(
                     'following-sibling::label[1]/span/text()').get()
             self.rtypes.add(rtype)
+            if not rtype:
+                self.logger.info('Type Not Found')
+                continue
             manual['file_urls'] = [rfile]
             manual['type'] = rtype.strip()
             manual['model'] = response.css('.model-number span::text').get()
