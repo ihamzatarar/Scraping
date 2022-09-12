@@ -1,6 +1,5 @@
 import scrapy
 import re
-from scrapy.spiders import SitemapSpidera
 
 
 class InFocusSpider(scrapy.Spider):
@@ -28,41 +27,39 @@ class InFocusSpider(scrapy.Spider):
             self.logger.warning("No manual found")
             return
 
-        for pdf_sel in response.css('a[href*=".pdf"]'):
-            manual = dict()
-            rtype = pdf_sel.xpath(
-                './../../preceding-sibling::p[1]/text()').get().strip()
-            if rtype in types_allowed:
-                rfile = pdf_sel.css("::attr(href)").get()
-                if rfile in self.rfiles:
-                    continue
-                self.rfiles.add(rfile)
-                self.rtypes.add(rtype)
-                manual['file_urls'] = [rfile]
-                manual['type'] = rtype
-                product_info = response.css('[product-id]').get()
-                try:
-                    model = re.search(r'"title":"(\w*)"',
-                                      product_info).group(1)
-                except (AttributeError, IndexError):
-                    self.logger.info('Thumb not found')
-                    continue
-                try:
-                    thumb = re.search(
-                        r'thumb":"(.*)', product_info).group(1).split('"')[0]
-                except (AttributeError, IndexError):
-                    self.logger.info('Thumb not found')
-                    continue
-                breadcrumbs = response.css(
-                    '.breadcrumbs__item a::text').getall()
-                manual['model'] = breadcrumbs[2].strip() + ' ' + model
-                manual['model_2'] = model
-                manual['product'] = breadcrumbs[1].strip()
-                manual['thumb'] = thumb
-                manual['url'] = response.url
-                manual['source'] = self.name
-                manual['brand'] = "InFocus"
-                manual['product_lang'] = response.css(
-                    'html::attr(lang)').get().split('-')[0]
+        product_info = response.css('[product-id]').get()
+        try:
+            models = list(re.findall(r'"title":"(\w*)"', product_info))
+        except (AttributeError, IndexError):
+            self.logger.info('model not found')
+            return
+        for model in models:
+            for pdf_sel in response.css('a[href*=".pdf"]'):
+                manual = dict()
+                rtype = pdf_sel.xpath(
+                    './../../preceding-sibling::p[1]/text()').get().strip()
+                if rtype in types_allowed:
+                    rfile = pdf_sel.css("::attr(href)").get()
+                    self.rfiles.add(rfile)
+                    self.rtypes.add(rtype)
+                    manual['file_urls'] = [rfile]
+                    manual['type'] = rtype
+                    try:
+                        thumb = re.search(
+                            r'thumb":"(.*)', product_info).group(1).split('"')[0]
+                    except (AttributeError, IndexError):
+                        self.logger.info('Thumb not found')
+                        continue
+                    breadcrumbs = response.css(
+                        '.breadcrumbs__item a::text').getall()
+                    manual['model'] = breadcrumbs[2].strip() + ' ' + model
+                    manual['model_2'] = model
+                    manual['product'] = breadcrumbs[1].strip()
+                    manual['thumb'] = thumb
+                    manual['url'] = response.url
+                    manual['source'] = self.name
+                    manual['brand'] = "InFocus"
+                    manual['product_lang'] = response.css(
+                        'html::attr(lang)').get().split('-')[0]
 
-                yield manual
+                    yield manual
