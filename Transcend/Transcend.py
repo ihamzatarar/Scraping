@@ -56,16 +56,15 @@ class TranscendSpider(scrapy.Spider):
 
         pdfs = response.css(
             '.BTNs.BTN-Download').xpath('./../preceding-sibling::li/text()').getall()
-        pdf = [pp for pp in pdfs if self.clean_type(
-            pp) == 'Manual' or self.clean_type(pp) == "User's Manual"]
+        pdf = [pp for pp in pdfs if 'manual' in pp.lower()]
         if not pdf:
             self.logger.warning("No manual found")
             return
 
         manual = response.meta['manual']
         for pdf_sel in response.css('.BTNs.BTN-Download'):
-            rtype = self.clean_type(pdf_sel.xpath(
-                './../preceding-sibling::li/text()').get())
+            rtype = pdf_sel.xpath(
+                './../preceding-sibling::li/text()').get()
             if not rtype:
                 continue
             rfile = response.urljoin(pdf_sel.css('a::attr(href)').get())
