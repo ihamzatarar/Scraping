@@ -13,7 +13,7 @@ class HähnelSpider(scrapy.Spider):
     }
 
     def parse(self, response):
-        for categ_sel in response.css('.first .lev2 a::text').getall():
+        for categ_sel in response.css('.first .lev2 a::attr(href)').getall():
             url = response.urljoin(categ_sel)
             yield response.follow(url, callback=self.parse_listing)
 
