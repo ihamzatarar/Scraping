@@ -1,15 +1,17 @@
 import scrapy
 
+#from manual_scraper_ext.items import Manual
 
-class HähnelSpider(scrapy.Spider):
+
+class HahnelSpider(scrapy.Spider):
+    name = 'hahnel.com'
     start_urls = [
         'https://www.hahnel.com.au/']
-    name = 'hahnel.com'
     rfiles = set()
     rtypes = set()
     custom_settings = {
-        "DOWNLOAD_DELAY": 0.3,
-        "CONCURRENT_REQUESTS": 5,
+        # "DOWNLOAD_DELAY": 0.3,
+        # "CONCURRENT_REQUESTS": 5,
     }
 
     def parse(self, response):
@@ -23,7 +25,6 @@ class HähnelSpider(scrapy.Spider):
             yield response.follow(url, callback=self.parse_item)
 
     def parse_item(self, response, **kwargs):
-        manual = dict()
 
         pdfs = response.css('.tab-container .copy a::text').getall()
         pdf = [pp for pp in pdfs if 'manual' in pp.lower()]
@@ -32,6 +33,8 @@ class HähnelSpider(scrapy.Spider):
             return
 
         for pdf_sel in response.css('.tab-container .copy a'):
+            manual = Manual()
+
             rfile = pdf_sel.css("::attr(href)").get()
             if rfile in self.rfiles:
                 continue
@@ -44,7 +47,8 @@ class HähnelSpider(scrapy.Spider):
             manual['type'] = rtype
             manual['model'] = self.clean_model(
                 response.css('#pageTitle::text').get())
-            manual['product'] = response.css('.folder a::text').getall()[2]
+            product = response.css('.folder a::text').getall()[2]
+            manual['product'] = self.clean_product(product)
             manual['thumb'] = response.css('.item.zoom img::attr(src)').get()
             manual['url'] = response.url
             manual['source'] = self.name
@@ -53,19 +57,27 @@ class HähnelSpider(scrapy.Spider):
 
             yield manual
 
+    def clean_product(self, product):
+        if not product:
+            return product
+        elif 'battery' in product.lower():
+            return 'Batteries'
+        else:
+            return product
+
     def clean_type(self, rtype):
         if not rtype:
             return rtype
         elif 'manual' in rtype.lower() or 'user_manual' in rtype.lower():
             return "Manual"
         elif 'brochure' in rtype.lower() or 'qig' in rtype.lower():
-            return "Brochure"
+            return ""
         elif 'doc' in rtype.lower():
-            return "Declaration of Conformity"
+            return ""
         elif 'v2' in rtype.lower() or 'www' in rtype.lower() or 'firmware' in rtype.lower():
             return ""
         elif 'marc alhadeff photography' in rtype.lower():
-            return "Review"
+            return ""
         else:
             return ''
 
@@ -73,7 +85,8 @@ class HähnelSpider(scrapy.Spider):
         try:
             if 'for' in model:
                 model_list = model.split('for')
-                cleaned_model = model_list[0] + '(' + model_list[1] + (' )')
+                cleaned_model = model_list[0] + \
+                    '(' + model_list[1].strip() + (')')
                 cleaned_model = cleaned_model.replace('Wireless Kit ', '').replace(
                     'Pro Kit ', '').replace('Speedlight', '')
                 return cleaned_model
