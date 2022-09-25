@@ -53,6 +53,13 @@ class SaramonicSpider(scrapy.Spider):
             if not model:
                 model = response.css(
                     '.fusion-column-wrapper h1 strong::text').get()
+
+            table_list = response.css('.tab-pane.fade td::text').getall()
+            for i, e in enumerate(table_list):
+                if 'Name:' in e:
+                    name = table_list[i+1].strip()
+                    model = name + ' ' + model
+
             manual['model'] = model
             manual['product'] = response.meta.get('product')
             manual['product_parent'] = response.meta.get('product_parent')
